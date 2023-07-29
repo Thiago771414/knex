@@ -1,4 +1,4 @@
-# knex
+# knex API Rest full
 O Knex é um poderoso construtor de consultas SQL para Node.js, que oferece uma maneira elegante e fluente de interagir com o banco de dados. Ele suporta vários bancos de dados, incluindo PostgreSQL, MySQL, SQLite e outros, tornando-o uma escolha popular para aplicativos Node.js que exigem acesso ao banco de dados.
 
 ## Criando uma aplicação Express com Knex
