@@ -39,45 +39,89 @@ Se ocorrer algum erro relacionado ao pacote "cookie-parser", navegue até a past
 No arquivo "app.js", configure a nova rota para produtos, adicionando as seguintes linhas de código:
 
 ````javascript
-const createError = require('http-errors');
-const express = require('express');
-const path = require('path');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
+var createError = require('http-errors');
+var express = require('express');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+var logger = require('morgan');
 
-const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
-const apiRouterV1 = require('./routes/apiRouterV1');
+var indexRouter = require('./routes/index');
+var usersRouter = require('./routes/users');
+var apiRouterV1 = require('./routes/apiRouterV1');
 
-const app = express();
+var app = express();
 
-// ... Código existente ...
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'jade');
+
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('/api/v1', apiRouterV1);
+app.use('/api/v1', apiRouterV1)
 
-// ... Código existente ...
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  next(createError(404));
+});
+
+// error handler
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
+
+module.exports = app;
 ````
 Adicione o seguinte trecho de código no arquivo "apiRouterV1.js" para implementar um novo endpoint que permite buscar um produto pelo seu ID:
 ````javascript
-// ... Código existente ...
+var express = require('express');
+var apiRouterV1 = express.Router();
+
+var produtos = [
+  {"id": 1, "descricao": "camiseta", "marca": "Nike", "preco": 49.99},
+  {"id": 2, "descricao": "calça jeans", "marca": "Levi's", "preco": 89.95},
+  {"id": 3, "descricao": "tênis esportivo", "marca": "Adidas", "preco": 79.50},
+  {"id": 4, "descricao": "vestido floral", "marca": "Zara", "preco": 59.99},
+  {"id": 5, "descricao": "moletom com capuz", "marca": "Puma", "preco": 69.75},
+  {"id": 6, "descricao": "boné", "marca": "New Era", "preco": 29.99},
+  {"id": 7, "descricao": "bolsa de couro", "marca": "Michael Kors", "preco": 149.00},
+  {"id": 8, "descricao": "óculos de sol", "marca": "Ray-Ban", "preco": 119.50},
+  {"id": 9, "descricao": "shorts jeans", "marca": "Guess", "preco": 54.95},
+  {"id": 10, "descricao": "jaqueta de couro", "marca": "Harley Davidson", "preco": 199.99}
+]
+
+apiRouterV1.get('/produtos', function(req, res, next) {
+    res.json(produtos)
+});
 
 apiRouterV1.get('/produtos/:id', function(req, res, next) {
-  const id = req.params.id;
+  let id = req.params.id;
   if (id) {
-    const idInt = Number.parseInt(id);
-    const idx = produtos.findIndex(o => o.id === idInt);
+    let idInt = Number.parseInt(id)
+    let idx = produtos.findIndex(o => o.id === idInt)
     if (idx > -1) {
-      res.json(produtos[idx]);
-    } else {
-      res.status(404).json({ message: `Produto não encontrado` });
+      res.json(produtos[idx])
     }
-  } else {
-    res.status(404).json({ message: `Produto não encontrado` });
+    else{
+      res.status(404).json({ message: `Produto não encontrado`})
+    }
+  }
+  else{
+    res.status(404).json({ message: `Produto não encontrado`})
   }
 });
 
-// ... Código existente ...
+module.exports = apiRouterV1;
 ````
 Utilize uma extensão cliente HTTP, como o "Thunder Client" (https://github.com/Thiago771414/Express), para testar o endpoint criado. Por exemplo, acesse a URL http://localhost:3000/api/v1/produtos/1 para buscar o produto com o ID igual a 1.
