@@ -125,3 +125,59 @@ apiRouterV1.get('/produtos/:id', function(req, res, next) {
 module.exports = apiRouterV1;
 ````
 Utilize uma extensão cliente HTTP, como o "Thunder Client" (https://github.com/Thiago771414/Express), para testar o endpoint criado. Por exemplo, acesse a URL http://localhost:3000/api/v1/produtos/1 para buscar o produto com o ID igual a 1.
+
+Adicione o seguinte trecho de código no arquivo "apiRouterV1.js" para implementar um novo endpoint que permite criar um produto.
+````javascript
+apiRouterV1.post('/produtos', function(req, res, next) {
+   let produto = req.body
+   let newId = Math.max(...produtos.map(o => o.id)) + 1
+   produto.id = newId
+   produtos.push (produto)
+   res.status(201).json({message: `Produto inserido com sucesso`,
+                         data: {id: newId}})
+});
+````
+Adicione o seguinte trecho de código no arquivo "apiRouterV1.js" para implementar um novo endpoint que permite deletar um produto.
+````javascript
+apiRouterV1.delete('/produtos/:id', function(req, res, next) {
+  let id = req.params.id;
+  if (id) {
+    let idInt = Number.parseInt(id)
+    let idx = produtos.findIndex(o => o.id === idInt)
+    if (idx > -1) {
+      produtos.splice (idx, 1)
+      res.status(200).json({message: `Produto excluído com sucesso!`})
+    }
+    else{
+      res.status(404).json({ message: `Produto não encontrado`})
+    }
+  }
+  else{
+    res.status(404).json({ message: `Produto não encontrado`})
+  }
+});
+````
+Adicione o seguinte trecho de código no arquivo "apiRouterV1.js" para implementar um novo endpoint que permite atualizar um produto.
+````javascript
+apiRouterV1.put('/produtos/:id', function(req, res, next) {
+  let id = req.params.id;
+  let produto = req.body
+  if (id) {
+    let idInt = Number.parseInt(id)
+    let idx = produtos.findIndex(o => o.id === idInt)
+    if (idx > -1) {
+      produtos[idx].descricao = produto.descricao
+      produtos[idx].marca = produto.marca
+      produtos[idx].preco = produto.preco
+
+      res.status(200).json({message: `Produto atualizado com sucesso!`, data: {produto: produtos[idx]}})
+    }
+    else{
+      res.status(404).json({ message: `Produto não encontrado`})
+    }
+  }
+  else{
+    res.status(404).json({ message: `Produto não encontrado`})
+  }
+});
+````
