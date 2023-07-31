@@ -181,52 +181,138 @@ apiRouterV1.put('/produtos/:id', function(req, res, next) {
   }
 });
 ````
-## Instale o Knex
+## Instalação e Configuração do Knex
+Instale o Knex e o banco de dados SQLite:
+````javascript
 npm install knex sqlite3
+````
+Inicialize o Knex para criar o arquivo knexfile.js:
+````javascript
 npx knex init
-
-crie uma pasta db no projeto para guardarmos tudo relacionado a banco de dados
-no arquivo criado knexfile.js com npx atualize o filename para a pasta db conforme o exemplo abaixo:
-````javascript
-  development: {
-    client: 'sqlite3',
-    connection: {
-      filename: './db/dev.sqlite3'
-    }
-  },
 ````
-vamos criar um banco de dados a partir de migrações do knex
+Crie uma pasta chamada db no projeto para guardar tudo relacionado ao banco de dados.
+No arquivo knexfile.js, atualize o caminho do arquivo do banco de dados (filename) para a pasta db. Dentro da configuração development, o trecho ficará assim:
 ````javascript
-  development: {
-    client: 'sqlite3',
-    connection: {
-      filename: './db/dev.sqlite3'
-    },
-    migrations: {
-      tableName: 'knex_migrations',
-      directory: './db/migrations'
-    }
+development: {
+  client: 'sqlite3',
+  connection: {
+    filename: './db/dev.sqlite3'
   },
+},
 ````
-após salvar digite o comando para criar a primeira tabela:
-npx knex migrate:make tabela-produto.js
-após o comando em db migrations será criado o script do up e down da tabela de produto
-na up adicione o código:
+Vamos criar um banco de dados a partir de migrações do Knex. Crie uma nova pasta chamada migrations dentro da pasta db.
+Execute o comando para criar o primeiro arquivo de migração, responsável por criar a tabela "produtos":
+````javascript
+npx knex migrate:make tabela-produto
+````
+Abra o arquivo criado na pasta migrations (ele terá um nome com a data e o nome que você definiu na etapa anterior, como 20230731123456_tabela-produto.js) e adicione o código para a tabela de produtos:
 ````javascript
 exports.up = function(knex) {
   return knex.schema.createTable("produtos", tbl => {
-    tbl.increments ('id');
-    tbl.text ("descricao", 255).unique ().notNullable();
-    tbl.text ("marca", 128).notNullable();
-    tbl.decimal ("preco").notNullable();
-  })
+    tbl.increments('id');
+    tbl.text("descricao", 255).unique().notNullable();
+    tbl.text("marca", 128).notNullable();
+    tbl.decimal("preco").notNullable();
+  });
 };
-````
-em down:
-````javascript
+
 exports.down = function(knex) {
-    return knex.schema.dropTableIfExists ('produtos')
+  return knex.schema.dropTableIfExists('produtos');
 };
 ````
-escreva o comando npx knex migrate:up para criar o banco de dados
-para visualizar o banco criado instale a extensão sqlite viewer
+Execute a migração para criar a tabela de produtos no banco de dados:
+````javascript
+npx knex migrate:latest
+````
+## Carga Inicial com Seeds
+Agora, vamos configurar as seeds (dados iniciais) na pasta seeds. Crie a pasta seeds dentro da pasta db.
+No arquivo knexfile.js, abaixo da configuração das migrações, adicione a configuração para as seeds:
+````javascript
+seeds: {
+  directory: './db/seeds'
+},
+````
+Execute o comando para criar o arquivo de seed:
+````javascript
+npx knex seed:make carga-produto
+````
+Abra o arquivo criado na pasta seeds (ele terá um nome com a data e o nome que você definiu na etapa anterior, como 20230731123643_carga-produto.js) e substitua o código pelo seguinte:
+````javascript
+exports.seed = async function(knex) {
+  // Deletes ALL existing entries
+  await knex('produtos').del();
+  // Inserts seed entries
+  await knex('produtos').insert([
+    {"descricao": "camiseta", "marca": "Nike", "preco": 49.99},
+    {"descricao": "calça jeans", "marca": "Levi's", "preco": 89.95},
+    {"descricao": "tênis esportivo", "marca": "Adidas", "preco": 79.50},
+    {"descricao": "vestido floral", "marca": "Zara", "preco": 59.99},
+    {"descricao": "moletom com capuz", "marca": "Puma", "preco": 69.75},
+    {"descricao": "boné", "marca": "New Era", "preco": 29.99},
+    {"descricao": "bolsa de couro", "marca": "Michael Kors", "preco": 149.00},
+    {"descricao": "óculos de sol", "marca": "Ray-Ban", "preco": 119.50},
+    {"descricao": "shorts jeans", "marca": "Guess", "preco": 54.95},
+    {"descricao": "jaqueta de couro", "marca": "Harley Davidson", "preco": 199.99}
+  ]);
+};
+````
+Execute a seed para inserir os dados na tabela:
+````javascript
+npx knex seed:run
+````
+## Atualização da API com Knex
+Crie uma nova versão da API, duplicando o arquivo apiRouterV1.js e renomeando-o para apiRouterV2.js.
+No novo arquivo apiRouterV2.js, atualize a importação do Knex e substitua a lógica dos endpoints para utilizar consultas ao banco de dados com o Knex:
+````javascript
+var express = require('express');
+var apiRouterV2 = express.Router();
+
+const knex = require('knex')(require('../knexfile').development);
+
+apiRouterV2.get('/produtos', function (req, res, next) {
+  knex('produtos')
+    .select('*')
+    .then(produtos => {
+      res.status(200).json(produtos);
+    })
+    .catch(err => res.status(500).json({ message: `Erro ao obter produtos: ${err.message}` }));
+});
+
+apiRouterV2.get('/produtos/:id', function (req, res, next) {
+  let id = req.params.id;
+  if (id) {
+    let idInt = Number.parseInt(id);
+    knex('produtos')
+      .select('*')
+      .where({ id: idInt })
+      .then(produtos => {
+        if (!produtos.length) {
+          res.status(404).json({ message: `Produto não encontrado` });
+          return;
+        }
+        let produto = produtos[0];
+        res.status(200).json(produto);
+      })
+      .catch(err => res.status(500).json({ message: `Erro ao obter produtos: ${err.message}` }));
+  } else {
+    res.status(404).json({ message: `Produto não encontrado` });
+  }
+});
+
+// Restante dos endpoints (POST, PUT, DELETE) com as devidas alterações.
+
+module.exports = apiRouterV2;
+````
+No arquivo app.js, atualize a importação da nova versão da API:
+````javascript
+// ...
+
+var apiRouterV2 = require('./routes/apiRouterV2');
+
+// ...
+
+app.use('/api/v2', apiRouterV2);
+
+// ...
+````
+Agora sua API deve estar atualizada para usar o Knex como ORM e o banco de dados SQLite. Utilizando o Knex, você pode facilmente trabalhar com migrações, seeds e consultas ao banco de dados de maneira mais organizada e eficiente. Lembre-se de sempre realizar testes e validar os dados de entrada e saída para garantir o bom funcionamento da API.
