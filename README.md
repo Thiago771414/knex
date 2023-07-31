@@ -181,3 +181,52 @@ apiRouterV1.put('/produtos/:id', function(req, res, next) {
   }
 });
 ````
+## Instale o Knex
+npm install knex sqlite3
+npx knex init
+
+crie uma pasta db no projeto para guardarmos tudo relacionado a banco de dados
+no arquivo criado knexfile.js com npx atualize o filename para a pasta db conforme o exemplo abaixo:
+````javascript
+  development: {
+    client: 'sqlite3',
+    connection: {
+      filename: './db/dev.sqlite3'
+    }
+  },
+````
+vamos criar um banco de dados a partir de migrações do knex
+````javascript
+  development: {
+    client: 'sqlite3',
+    connection: {
+      filename: './db/dev.sqlite3'
+    },
+    migrations: {
+      tableName: 'knex_migrations',
+      directory: './db/migrations'
+    }
+  },
+````
+após salvar digite o comando para criar a primeira tabela:
+npx knex migrate:make tabela-produto.js
+após o comando em db migrations será criado o script do up e down da tabela de produto
+na up adicione o código:
+````javascript
+exports.up = function(knex) {
+  return knex.schema.createTable("produtos", tbl => {
+    tbl.increments ('id');
+    tbl.text ("descricao", 255).unique ().notNullable();
+    tbl.text ("marca", 128).notNullable();
+    tbl.decimal ("preco").notNullable();
+  })
+};
+````
+em down:
+````javascript
+exports.down = function(knex) {
+    return knex.schema.dropTableIfExists ('produtos')
+};
+````
+escreva o comando npx knex migrate:up para criar o banco de dados
+para visualizar o banco criado instale a extensão sqlite viewer
